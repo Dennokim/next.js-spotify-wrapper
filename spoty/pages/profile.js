@@ -1,48 +1,43 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
-const SPOTIFY_API_ENDPOINT = "https://api.spotify.com/v1/me/playlists";
-
-export default function profile() {
+export default function Profile() {
   const { data: session } = useSession();
-  const [playlists, setPlaylists] = useState([]);
-  const [accessToken, setAccessToken] = useState("");
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    async function f() {
+    async function fetchProfile() {
       if (session && session.accessToken) {
-        // Set the access token
-        setAccessToken(session.accessToken);
-
-        // Get the user's playlists
-        const response = await fetch(SPOTIFY_API_ENDPOINT, {
+        const profileResponse = await fetch("https://api.spotify.com/v1/me", {
           headers: {
             Authorization: `Bearer ${session.accessToken}`,
           },
         });
-
-        if (response.ok) {
-          const data = await response.json();
-          setPlaylists(data.items);
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          setProfile(profileData);
         } else {
-          console.log("Error fetching playlists:", response.statusText);
+          console.log(
+            "Error fetching user profile:",
+            profileResponse.statusText
+          );
         }
       }
     }
-
-    f();
+    fetchProfile();
   }, [session]);
 
   return (
     <main className="">
       <div className="">
-        <div>access Token: {accessToken}</div>
-        <div>Playlists:</div>
-        <ul>
-          {playlists.map((playlist) => (
-            <li key={playlist.id}>{playlist.name}</li>
-          ))}
-        </ul>
+        {profile && (
+          <div>
+            <img src={profile.images[0].url} alt="User profile" width={100} height={100} />
+            <h2>Welcome: {profile.display_name}</h2>
+            <div>Followers: {profile.followers.total}</div>
+          </div>
+        )}
       </div>
     </main>
   );
