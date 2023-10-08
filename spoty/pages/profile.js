@@ -1,6 +1,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { countryCodes, genres } from "../utils/shazamCodes";
+import TopTracks from "./topTracks";
 
 export default function Profile() {
   const { data: session } = useSession();
@@ -137,6 +138,11 @@ export default function Profile() {
                 </li>
               ))}
           </ul>
+
+          <div>
+            <h2>Top Tracks</h2>
+            <TopTracks />
+          </div>
         </div>
       </div>
     </main>
