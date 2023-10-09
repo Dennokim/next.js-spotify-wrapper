@@ -5,7 +5,8 @@ export default function TopTracks() {
   const { data: session } = useSession();
   const [topTracksData, setTopTracks] = useState([]);
   const [topArtistsData, setTopArtists] = useState([]);
-  const [timeRange, setTimeRange] = useState("short_term"); // Default time range is 4 weeks
+  const [timeRange, setTimeRange] = useState("short_term");
+  const [topAlbumsData, setTopAlbums] = useState([]);
 
   // Define the fetchTopTracks function outside the useEffect
   async function fetchTopTracks() {
@@ -22,8 +23,59 @@ export default function TopTracks() {
         if (response.ok) {
           const topTracksData = await response.json();
           setTopTracks(topTracksData.items);
+
+          // Fetch album information for each track
+          const trackIds = topTracksData.items
+            .map((track) => track.id)
+            .join(",");
+          const albumsResponse = await fetch(
+            `https://api.spotify.com/v1/tracks/?ids=${trackIds}`,
+            {
+              headers: {
+                Authorization: `Bearer ${session.accessToken}`,
+              },
+            }
+          );
+
+          if (albumsResponse.ok) {
+            const albumsData = await albumsResponse.json();
+            const albumIds = albumsData.tracks
+              .map((track) => track.album.id)
+              .join(",");
+
+            // Call a function to fetch the user's top albums based on albumIds
+            fetchTopAlbums(albumIds);
+          } else {
+            console.log(
+              "Error fetching albums for tracks:",
+              albumsResponse.statusText
+            );
+          }
         } else {
           console.log("Error fetching top tracks:", response.statusText);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  }
+
+  async function fetchTopAlbums(albumIds) {
+    if (session && session.accessToken) {
+      try {
+        const response = await fetch(
+          `https://api.spotify.com/v1/albums?ids=${albumIds}`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.accessToken}`,
+            },
+          }
+        );
+        if (response.ok) {
+          const topAlbumsData = await response.json();
+          setTopAlbums(topAlbumsData.albums);
+        } else {
+          console.log("Error fetching top albums:", response.statusText);
         }
       } catch (error) {
         console.error(error);
@@ -96,6 +148,7 @@ export default function TopTracks() {
           </li>
         ))}
       </ul>
+
       <h2>Top Artists:</h2>
       <ul>
         {topArtistsData.map((artist, index) => (
@@ -105,6 +158,23 @@ export default function TopTracks() {
               <img
                 src={artist.images[0].url}
                 alt={`Image of ${artist.name}`}
+                width={100}
+                height={100}
+              />
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <h2>Top Albums:</h2>
+      <ul>
+        {topAlbumsData.map((album, index) => (
+          <li key={index}>
+            <p>{album.name}</p>
+            {album.images.length > 0 && (
+              <img
+                src={album.images[0].url}
+                alt={`Album cover for ${album.name}`}
                 width={100}
                 height={100}
               />
