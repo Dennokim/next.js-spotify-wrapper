@@ -7,6 +7,7 @@ export default function TopTracks() {
   const [topArtistsData, setTopArtists] = useState([]);
   const [timeRange, setTimeRange] = useState("short_term");
   const [topAlbumsData, setTopAlbums] = useState([]);
+  const [topGenres, setTopGenres] = useState([]);
 
   // Define the fetchTopTracks function outside the useEffect
   async function fetchTopTracks() {
@@ -107,11 +108,62 @@ export default function TopTracks() {
     }
   }
 
+  // Define a function to fetch the genres of the top artists
+  async function fetchTopArtistsGenres() {
+    if (session && session.accessToken) {
+      try {
+        const artistIds = topArtistsData.map((artist) => artist.id).join(",");
+        const response = await fetch(
+          `https://api.spotify.com/v1/artists?ids=${artistIds}`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.accessToken}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const artistsData = await response.json();
+          const artistGenres = artistsData.artists
+            .map((artist) => artist.genres)
+            .flat();
+          const genreCounts = {};
+
+          artistGenres.forEach((genre) => {
+            if (genreCounts[genre]) {
+              genreCounts[genre]++;
+            } else {
+              genreCounts[genre] = 1;
+            }
+          });
+
+          // Sort the genres by count and get the top 5
+          const sortedGenres = Object.keys(genreCounts).sort(
+            (a, b) => genreCounts[b] - genreCounts[a]
+          );
+          const top5Genres = sortedGenres.slice(0, 5);
+          setTopGenres(top5Genres);
+        } else {
+          console.log("Error fetching artist data:", response.statusText);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  }
+
   useEffect(() => {
     // Call fetchTopTracks and fetchTopArtists when the session changes or the timeRange changes
     fetchTopTracks();
     fetchTopArtists();
   }, [session, timeRange]);
+
+  // Call fetchTopArtistsGenres when topArtistsData changes
+  useEffect(() => {
+    if (topArtistsData.length > 0) {
+      fetchTopArtistsGenres();
+    }
+  }, [topArtistsData]);
 
   const handleTimeRangeChange = (event) => {
     setTimeRange(event.target.value);
@@ -132,6 +184,14 @@ export default function TopTracks() {
           <option value="long_term">All Time</option>
         </select>
       </div>
+
+      <h2>Top Genres:</h2>
+      <ul>
+        {topGenres.map((genre, index) => (
+          <li key={index}>{genre}</li>
+        ))}
+      </ul>
+
       <h2>Top Tracks:</h2>
       <ul>
         {topTracksData.map((track, index) => (
