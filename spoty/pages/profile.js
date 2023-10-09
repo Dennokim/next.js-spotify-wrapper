@@ -1,7 +1,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { countryCodes, genres } from "../utils/shazamCodes";
-import TopTracks from "./topTracks";
+import TopTracks from "../lib/usersTop";
 
 export default function Profile() {
   const { data: session } = useSession();
